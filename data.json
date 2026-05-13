@@ -1,0 +1,17 @@
+{
+  "users": [
+    {
+      "username": "a",
+      "password": "a"
+    }
+  ],
+  "products": [
+    {
+      "id": "1",
+      "name": "a",
+      "price": 1.0,
+      "stock": 2
+    }
+  ],
+  "transactions": []
+}

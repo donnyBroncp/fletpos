@@ -40,7 +40,7 @@ def login_screen(page: ft.Page, on_login):
     return ft.Container(
         content=ft.Column(
             controls=[
-                ft.Icon(ft.icons.INVENTORY, size=60, color="indigo"),
+                ft.Icon(ft.Icons.STORE, size=60, color="indigo"),
                 ft.Text("FlowStock POS", size=28, weight=ft.FontWeight.BOLD),
                 ft.Text("Sign in to continue", size=14, color="grey"),
                 username,
@@ -58,6 +58,6 @@ def login_screen(page: ft.Page, on_login):
             alignment=ft.MainAxisAlignment.CENTER,
             spacing=12,
         ),
-        alignment=ft.alignment.center,
+        alignment=ft.alignment.Alignment(0, 0),
         expand=True,
     )
