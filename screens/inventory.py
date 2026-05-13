@@ -1,5 +1,5 @@
 # ============================================================
-# INVENTORY SCREEN
+# INVENTORY SCREEN — with error trapping
 # ============================================================
 
 import flet as ft
@@ -13,82 +13,122 @@ def inventory_screen(page: ft.Page):
     error = ft.Text(color="red", size=12)
     product_list = ft.Column(scroll=ft.ScrollMode.AUTO, expand=True)
 
-    def refresh():
-        product_list.controls.clear()
-        for p in data.get_products():
-            product_list.controls.append(
-                ft.Card(
-                    content=ft.Container(
-                        content=ft.Row(
-                            controls=[
-                                ft.Column(
-                                    controls=[
-                                        ft.Text(p["name"], weight=ft.FontWeight.BOLD),
-                                        ft.Text(
-                                            f"₱{p['price']} | Stock: {p['stock']}",
-                                            color="grey",
-                                            size=12,
-                                        ),
-                                    ],
-                                    expand=True,
-                                ),
-                                ft.IconButton(
-                                    ft.Icons.EDIT,
-                                    on_click=lambda e, p=p: open_edit(p),
-                                    icon_color="blue",
-                                ),
-                                ft.IconButton(
-                                    ft.Icons.DELETE,
-                                    on_click=lambda e, p=p: handle_delete(p["id"]),
-                                    icon_color="red",
-                                ),
-                            ],
-                        ),
-                        padding=10,
-                    )
-                )
-            )
+    def show_error(msg, color="red"):
+        error.value = msg
+        error.color = color
         page.update()
 
+    def refresh():
+        try:
+            product_list.controls.clear()
+            for p in data.get_products():
+                product_list.controls.append(
+                    ft.Card(
+                        content=ft.Container(
+                            content=ft.Row(
+                                controls=[
+                                    ft.Column(
+                                        controls=[
+                                            ft.Text(
+                                                p["name"], weight=ft.FontWeight.BOLD
+                                            ),
+                                            ft.Text(
+                                                f"₱{p['price']} | Stock: {p['stock']}",
+                                                color="grey",
+                                                size=12,
+                                            ),
+                                        ],
+                                        expand=True,
+                                    ),
+                                    ft.IconButton(
+                                        ft.Icons.EDIT,
+                                        on_click=lambda e, p=p: open_edit(p),
+                                        icon_color="blue",
+                                    ),
+                                    ft.IconButton(
+                                        ft.Icons.DELETE,
+                                        on_click=lambda e, p=p: handle_delete(p["id"]),
+                                        icon_color="red",
+                                    ),
+                                ],
+                            ),
+                            padding=10,
+                        )
+                    )
+                )
+            page.update()
+        except Exception as ex:
+            show_error(f"Failed to load products: {ex}")
+
     def handle_add(e):
-        if not name.value or not price.value or not stock.value:
-            error.value = "Fill all fields"
-            page.update()
-            return
-        products = data.get_products()
-        if any(p["name"].lower() == name.value.lower() for p in products):
-            error.value = "Product already exists"
-            page.update()
-            return
-        data.add_product(name.value, float(price.value), int(stock.value))
-        name.value = price.value = stock.value = error.value = ""
-        refresh()
+        try:
+            if not name.value or not price.value or not stock.value:
+                show_error("Fill all fields")
+                return
+            products = data.get_products()
+            if any(p["name"].lower() == name.value.lower() for p in products):
+                show_error("Product already exists")
+                return
+            data.add_product(name.value, float(price.value), int(stock.value))
+            name.value = price.value = stock.value = error.value = ""
+            refresh()
+        except ValueError:
+            show_error("Price and stock must be valid numbers")
+        except Exception as ex:
+            show_error(f"Failed to add product: {ex}")
 
     def handle_delete(id):
-        data.delete_product(id)
-        refresh()
+        try:
+            data.delete_product(id)
+            refresh()
+        except Exception as ex:
+            show_error(f"Failed to delete product: {ex}")
 
     def open_edit(p):
         edit_name = ft.TextField(label="Name", value=p["name"])
         edit_price = ft.TextField(label="Price", value=str(p["price"]))
         edit_stock = ft.TextField(label="Stock", value=str(p["stock"]))
+        edit_error = ft.Text(color="red", size=12)
 
         def save_edit(e):
-            data.update_product(
-                p["id"], edit_name.value, float(edit_price.value), int(edit_stock.value)
-            )
-            page.close(dlg)
-            refresh()
+            try:
+                if not edit_name.value or not edit_price.value or not edit_stock.value:
+                    edit_error.value = "Fill all fields"
+                    page.update()
+                    return
+                data.update_product(
+                    p["id"],
+                    edit_name.value,
+                    float(edit_price.value),
+                    int(edit_stock.value),
+                )
+                dlg.open = False
+                page.update()
+                refresh()
+            except ValueError:
+                edit_error.value = "Price and stock must be valid numbers"
+                page.update()
+            except Exception as ex:
+                edit_error.value = f"Failed to update: {ex}"
+                page.update()
+
+        def close_dlg():
+            dlg.open = False
+            page.update()
 
         dlg = ft.AlertDialog(
             title=ft.Text("Edit Product"),
-            content=ft.Column(controls=[edit_name, edit_price, edit_stock], tight=True),
+            content=ft.Column(
+                controls=[edit_name, edit_price, edit_stock, edit_error], tight=True
+            ),
             actions=[
-                ft.TextButton("Cancel", on_click=lambda e: page.close(dlg)),
+                ft.TextButton("Cancel", on_click=lambda e: close_dlg()),
                 ft.ElevatedButton("Save", on_click=save_edit),
             ],
         )
-        page.open(dlg)
+        page.overlay.append(dlg)
+        dlg.open = True
+        page.update()
 
     refresh()
 

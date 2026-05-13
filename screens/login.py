@@ -1,5 +1,5 @@
 # ============================================================
-# LOGIN SCREEN
+# LOGIN SCREEN — with error trapping
 # ============================================================
 
 import flet as ft
@@ -14,28 +14,45 @@ def login_screen(page: ft.Page, on_login):
     error = ft.Text(color="red", size=12)
 
     def handle_login(e):
-        user = data.find_user(username.value, password.value)
-        if not user:
-            error.value = "Invalid username or password"
+        try:
+            if not username.value or not password.value:
+                error.value = "Fill all fields"
+                error.color = "red"
+                page.update()
+                return
+            user = data.find_user(username.value, password.value)
+            if not user:
+                error.value = "Invalid username or password"
+                error.color = "red"
+                page.update()
+                return
+            on_login(user)
+        except Exception as ex:
+            error.value = f"Login error: {ex}"
+            error.color = "red"
             page.update()
-            return
-        on_login(user)
 
     def handle_register(e):
-        if not username.value or not password.value:
-            error.value = "Fill all fields"
+        try:
+            if not username.value or not password.value:
+                error.value = "Fill all fields"
+                error.color = "red"
+                page.update()
+                return
+            users = data.get_users()
+            if any(u["username"] == username.value for u in users):
+                error.value = "Username already taken"
+                error.color = "red"
+                page.update()
+                return
+            data.add_user(username.value, password.value)
+            error.color = "green"
+            error.value = "Registered! You can now login."
             page.update()
-            return
-        users = data.get_users()
-        if any(u["username"] == username.value for u in users):
-            error.value = "Username already taken"
+        except Exception as ex:
+            error.value = f"Registration error: {ex}"
+            error.color = "red"
             page.update()
-            return
-        data.add_user(username.value, password.value)
-        error.value = ""
-        error.color = "green"
-        error.value = "Registered! You can now login."
-        page.update()
 
     return ft.Container(
         content=ft.Column(
@@ -58,6 +75,6 @@ def login_screen(page: ft.Page, on_login):
             alignment=ft.MainAxisAlignment.CENTER,
             spacing=12,
         ),
-        alignment=ft.alignment.Alignment(0, 0),
+        alignment=ft.Alignment(0, 0),
         expand=True,
     )
