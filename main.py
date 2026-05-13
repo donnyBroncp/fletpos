@@ -7,6 +7,7 @@ from screens.login import login_screen
 from screens.pos import pos_screen
 from screens.inventory import inventory_screen
 from screens.sales_report import sales_report_screen
+from screens.users import users_screen
 
 
 def main(page: ft.Page):
@@ -32,6 +33,11 @@ def main(page: ft.Page):
             ft.Container(content=pos_screen(page), padding=20, expand=True),
             ft.Container(content=inventory_screen(page), padding=20, expand=True),
             ft.Container(content=sales_report_screen(page), padding=20, expand=True),
+            ft.Container(
+                content=users_screen(page, current_user["value"]),
+                padding=20,
+                expand=True,
+            ),
         ]
 
         content = ft.Container(content=tabs[0], expand=True)
@@ -52,6 +58,9 @@ def main(page: ft.Page):
                             ),
                             ft.NavigationRailDestination(
                                 icon=ft.Icons.BAR_CHART, label="Sales"
+                            ),
+                            ft.NavigationRailDestination(
+                                icon=ft.Icons.PEOPLE, label="Users"
                             ),
                         ],
                         trailing=ft.IconButton(
